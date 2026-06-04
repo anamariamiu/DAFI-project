@@ -1,2 +1,2 @@
 # DAFI-project
-AMR Pharma - Sistem CPS GxP
+Sistem Cyber-Fizic pentru Monitorizare AMR Pharma
