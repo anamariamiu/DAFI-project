@@ -114,7 +114,7 @@ stateDiagram-v2
   3. Se definesc dimensiunile geometrice ale halei și se inițiază procesul apăsând **START MISSION**. Populația hărții termice 3D se va realiza în timp real, sincronizat cu parcursul robotului.
 
 ## Checklist Final P3 
-  x Tabelul Nevoie → Soluție → Modul: Este detaliat în Secțiunea 1, corelând precis provocările logistice reale (zone oarbe High-Bay, standarde GDP, audit GxP) cu modulele software dezvoltate (engine.py și app.py).
-  x Diagrama State Machine (Logică, Achiziție, Baterie): Structura Mermaid din Secțiunea 2 ilustrează clar ciclul de viață determinist al robotului, incluzând tranzițiile critice declanșate de pragul de siguranță al acumulatorului (<= 15%).
+  [x] Tabelul Nevoie → Soluție → Modul: Este detaliat în Secțiunea 1, corelând precis provocările logistice reale (zone oarbe High-Bay, standarde GDP, audit GxP) cu modulele software dezvoltate (engine.py și app.py).
+  [x] Diagrama State Machine (Logică, Achiziție, Baterie): Structura Mermaid din Secțiunea 2 ilustrează clar ciclul de viață determinist al robotului, incluzând tranzițiile critice declanșate de pragul de siguranță al acumulatorului (<= 15%).
   [x] Sistemul de întreruperi manuale: Diagrama FSM include vizual liniile de tranziție rapidă de la stările operaționale (Maps, SCAN_HEIGHTS, EDGE_SAVE_AND_SYNC) direct către starea IDLE la comanda de Emergency STOP.
   [x] Legenda și justificarea tehnică (Industria Farmaceutică): Secțiunea 3 și blocul dedicat limitărilor hardware fundamentează deciziile de arhitectură utilizând principii specifice domeniului (ALCOA+, timp de stabilizare a senzorilor, imunitate la zonele moarte Wi-Fi).
