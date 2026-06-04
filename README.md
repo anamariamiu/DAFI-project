@@ -8,40 +8,33 @@ Sistem Cyber-Fizic pentru Monitorizare AMR Pharma
 **Student:** Ana-Maria MIU (Master AIII)  
 **Data:** Mai 2026  
 
----
+## Descrierea Proiectului
+  Acest proiect reprezintă prototipul software pentru un **Sistem Ciber-Fizic (CPS)** de nivel industrial. Se simulează un robot autonom (AMR) dotat cu un senzor pe un braț telescopic, care se deplasează printre rafturile unui depozit farmaceutic (High-Bay) pentru a verifica dacă medicamentele sunt păstrate în condiții optime (sub 25°C), mapând datele obținute într-un format 3D.
+  
+  Sistemul este structurat în două module decuplate care comunică prin protocolul MQTT:
+  1. **Creierul Robotului (`engine.py`):** Rulează fizic pe robot (Edge). Gestionează hardware-ul, scanează temperatura la 3 înălțimi diferite, monitorizează autonomia bateriei și înregistrează automat fiecare eveniment într-un registru intern imuabil (baza de date SQLite).
+  2. **Interfața Web / Digital Twin (`app.py`):** Rulează pe stația de lucru a operatorului. Oferă o hartă termică volumetrică 3D în timp real, un panou de comandă și funcții pentru generarea rapoartelor de audit.
 
-## Ce face acest proiect?
-  Acest proiect reprezintă prototipul software pentru un **Sistem Ciber-Fizic (CPS)** de nivel industrial. Simulează un robot autonom (AMR) dotat cu un senzor pe un braț telescopic, care se plimbă printre rafturile unui depozit farmaceutic (High-Bay) pentru a verifica dacă medicamentele sunt păstrate în condiții optime (sub 25°C), mapând totul în format 3D.
 
-  Sistemul este împărțit în două module decuplate care comunică prin internet (MQTT):
-    1. **Creierul Robotului (`engine.py`):** Rulează fizic pe robot (Edge). Controlează hardware-ul, scanează temperatura la 3 înălțimi diferite, supraveghează bateria și loghează automat fiecare mișcare într-un registru intern imuabil (baza de date SQLite).
-    2. **Interfața Web / Digital Twin (`app.py`):** Rulează pe PC-ul managerului. Oferă o hartă termică volumetrică 3D în timp real, panou de comandă și generare de rapoarte de audit.
-
----
-
-## Conturi de Utilizator (RBAC - Role-Based Access Control)
-  Sistemul implementează securitate strictă. În funcție de rol, utilizatorii au permisiuni diferite pentru a garanta integritatea datelor (Segregation of Duties):
+## Controlul Accesului (RBAC - Role-Based Access Control)
+Sistemul implementează politici de securitate stricte. În funcție de rolul alocat, utilizatorii dispun de permisiuni diferite pentru a garanta separarea responsabilităților (Segregation of Duties):
 
 | Utilizator | Parolă | Rol și Nivel de Acces |
 | :--- | :--- | :--- |
-| **`manager`** | `dafi2026` | **Control Operațional (Read & Write):** Poate porni misiunea (START), poate seta dimensiunile halei și poate opri de urgență robotul. |
-| **`auditor`** | `pharma123` | **Inspector Calitate (Read-Only):** Acces dedicat exclusiv vizualizării hărții și descărcării rapoartelor de deviații GxP (.XLSX) și tehnice (.CSV). Butoanele de control robot sunt blocate. |
+| **`manager`** | `dafi2026` | **Control Operațional (Read & Write):** Permite inițierea misiunii (START), setarea dimensiunilor halei și oprirea de urgență a sistemului. |
+| **`auditor`** | `pharma123` | **Inspector Calitate (Read-Only):** Acces limitat la vizualizarea hărții și la descărcarea rapoartelor de deviații GxP (.XLSX) și tehnice (.CSV). Comenzile către robot sunt blocate. |
 
----
+## 1. Maparea Nevoilor Industriale (Soluție CPS)
 
-## 1. Tabelul Nevoie Reală → Soluție CPS → Modul Software
-
-| *Nevoie reală concretă* | *Cum o rezolvă CPS-ul propus* | *Modul software responsabil* |
+| *Nevoie industrială concretă* | *Soluția CPS implementată* | *Modul software responsabil* |
 |:---|:---|:---|
-| **Monitorizarea zonelor oarbe în rafturi High-Bay** | Deplasare X,Y și scanare secvențială la 3 înălțimi (Z) via braț telescopic | Starea `SCAN_HEIGHTS` din `engine.py` |
-| **Menținerea integrității medicamentelor (GDP)** | Detectarea excursiilor termice (> 25°C) în timp real și afișarea în Harta 3D | HMI Dashboard (`app.py`) |
-| **Garantarea datelor pentru audit farmaceutic** | Logare digitală securizată ALCOA+ în SQLite a *fiecărei stări FSM*, rezistentă la căderi Wi-Fi | Continuous Edge Logging (`engine.py`) |
+| **Monitorizarea zonelor oarbe în rafturi High-Bay** | Deplasare pe axele X, Y și scanare secvențială la 3 înălțimi (Z) via braț telescopic. | Starea `SCAN_HEIGHTS` din `engine.py` |
+| **Menținerea integrității medicamentelor (GDP)** | Detectarea excursiilor termice (> 25°C) în timp real și modelarea lor în Harta 3D. | HMI Dashboard (`app.py`) |
+| **Garantarea datelor pentru auditul farmaceutic** | Jurnalizare digitală securizată ALCOA+ în SQLite a *fiecărei stări FSM*, rezistentă la pierderea conexiunii Wi-Fi. | Continuous Edge Logging (`engine.py`) |
 
----
+## 2. Diagrama Automatul de Stări (State Machine)
 
-## 2. Diagrama State Machine a Sistemului (Automatul de Stări)
-
-  Robotul împarte misiunea în pași discreți și deterministici. O noutate față de simulările clasice este prezența stării de `INIT`, care reprezintă calibrarea hardware reală înainte de acceptarea comenzilor.
+  Funcționarea robotului este divizată în pași discreți și deterministici. O inovație față de simulările teoretice o reprezintă starea de `INIT`, care modelează calibrarea hardware fizică anterior acceptării comenzilor.
 
 ### Reprezentare Vizuală (Sintaxă Mermaid)
 
@@ -56,59 +49,72 @@ stateDiagram-v2
     state "Salvare & Sincronizare DB (EDGE_SAVE_AND_SYNC)" as EDGE_SAVE_AND_SYNC
     state "Oprire Siguranță & Încărcare (SAFE_STOP)" as SAFE_STOP
     
-    [*] --> INIT : Pornire fizică sistem (Alimentare)
+    [*] --> INIT : Alimentare sistem
     
-    INIT --> IDLE : Auto-diagnostic OK (Senzori & LiDAR)
+    INIT --> IDLE : Auto-diagnostic finalizat (Senzori & LiDAR)
     IDLE --> NAVIGATE : Primire comandă START (MQTT)
     
     %% Fluxul normal de operare
-    NAVIGATE --> SCAN_HEIGHTS : Ajuns la poziție (Baterie > 15%)
-    SCAN_HEIGHTS --> EDGE_SAVE_AND_SYNC : Scanare Z completă (0.2m, 1.5m, 3.0m)
+    NAVIGATE --> SCAN_HEIGHTS : Atingere punct curent (Baterie > 15%)
+    SCAN_HEIGHTS --> EDGE_SAVE_AND_SYNC : Ciclu Z finalizat (0.2m, 1.5m, 3.0m)
     
     %% Deciziile după salvarea datelor
     EDGE_SAVE_AND_SYNC --> NAVIGATE : Continuare misiune (Următorul punct X, Y)
-    EDGE_SAVE_AND_SYNC --> IDLE : Misiune completă (S-a depășit Y max)
+    EDGE_SAVE_AND_SYNC --> IDLE : Misiune completă (Traseu epuizat)
     
-    %% Tranzițiile de siguranță pentru baterie scăzută
+    %% Tranzițiile de siguranță pentru baterie
     NAVIGATE --> SAFE_STOP : Baterie <= 15%
     EDGE_SAVE_AND_SYNC --> SAFE_STOP : Baterie <= 15%
     
     %% Ciclul de reîncărcare
-    SAFE_STOP --> IDLE : Baterie încărcată (100%)
+    SAFE_STOP --> IDLE : Baterie reîncărcată (100%)
     
-    %% Întreruperea manuală (Butonul STOP din interfață)
-    NAVIGATE --> IDLE : Apăsare Buton STOP
-    SCAN_HEIGHTS --> IDLE : Apăsare Buton STOP
-    EDGE_SAVE_AND_SYNC --> IDLE : Apăsare Buton STOP
+    %% Întreruperea manuală
+    NAVIGATE --> IDLE : Comandă Oprire Urgență
+    SCAN_HEIGHTS --> IDLE : Comandă Oprire Urgență
+    EDGE_SAVE_AND_SYNC --> IDLE : Comandă Oprire Urgență
+```
 
-## 3. Justificarea State Machine-ului (Orientare Industrială)
-  - Tranziția Hardware (INIT → IDLE): Un robot nu pornește direct gata de misiune. Starea INIT blochează sistemul timp de 4 secunde pentru calibrarea senzorilor și citirea tensiunii bateriei, prevenind pornirile accidentale sau erorile de senzori reci.
-  - Eficientizare Hardware: Robotul separă complet starea de deplasare de starea de achiziție (SCAN_HEIGHTS). Robotul se oprește complet la fiecare coloană înainte de a ridica senzorul, eliminând vibrațiile mecanice care ar putea altera citirea termică.
-  - Integritatea Datelor (ALCOA+): Robotul trece în salvare (EDGE_SAVE_AND_SYNC) doar după ce a generat pachetul complet de la toate cele 3 cote Z, eliminând riscul raportării unor profile termice trunchiate.
-  - Siguranță Industrială (Fault-Tolerant): Dacă bateria atinge 15%, robotul declanșează prioritar SAFE_STOP, abandonând traseul pentru a se reîncărca. Această stare previne moartea subită a robotului pe coridoare.
+## 3. Justificarea Arhitecturii (Standarde Industriale)
+  * **Tranziția Hardware (INIT → IDLE):** Echipamentele fizice necesită o fază de calibrare. Starea `INIT` impune o întârziere pentru inițializarea senzorilor și citirea tensiunii bateriei (BMS), prevenind pornirile necontrolate.
+  * **Eficientizare Hardware:** Achiziția de date (`SCAN_HEIGHTS`) este decuplată de deplasare. Robotul este programat să staționeze la fiecare coloană înainte de extinderea senzorului, atenuând vibrațiile mecanice ce pot compromite citirea profilului termic.
+  * **Integritatea Datelor (ALCOA+):** Trecerea în stadiul de salvare (`EDGE_SAVE_AND_SYNC`) se efectuează exclusiv după generarea pachetului complet aferent celor 3 cote, prevenind stocarea profilelor incomplete.
+  * **Siguranță (Fault-Tolerance):** Scăderea bateriei sub 15% declanșează starea prioritară `SAFE_STOP`. Misiunea este întreruptă controlat, permițând retragerea automată la stația de încărcare.
 
-## Limite din Realitatea Industrială (Considerente Hardware)
-  - Acest prototip rezolvă provocări majore care apar într-o hală reală, depășind o simplă simulare:
-  - Dinamica Brațului Telescopic: În simulare, scanarea se face rapid. În realitate, extinderea unui catarg la 3 metri induce vibrații. Starea SCAN_HEIGHTS simulează un "timp de stabilizare" de câteva secunde necesar senzorului pentru a nu raporta curenții de aer drept fluctuații de temperatură.
-  - Efectul Cuștii Faraday: Rafturile metalice masive blochează frecvent semnalul Wi-Fi. De aceea, arhitectura a fost dotată cu Edge Data Logging: datele sunt scrise local în SQLite pe robot, fiind imune la căderile de internet, salvând integritatea auditului.
+## Factori din Realitatea Fizică (Constrângeri Hardware)
+  Sistemul răspunde la limitări operaționale întâlnite în mediile logistice reale:
+  * **Dinamica Brațului Telescopic:** Ridicarea fizică a senzorului presupune inerție. Starea `SCAN_HEIGHTS` a fost proiectată să aloce "timpi de stabilizare", prevenind înregistrarea curenților de aer generați de mișcare ca fiind fluctuații termice ambientale.
+  * **Atenuarea Semnalului (Efectul Faraday):** Structurile metalice High-Bay degradează conexiunile Wi-Fi. Pentru a asigura trasabilitatea neîntreruptă a datelor pentru audit, arhitectura include logare locală (Edge Computing), baza de date SQLite operând independent de conexiunea la rețea.
 
-## Ghid de Instalare și Rulare (Pentru Utilizatori)
-  - Pentru ca sistemul să funcționeze corect, Microserviciile trebuie pornite secvențial, în două terminale separate.
+## Instrucțiuni de Utilizare și Rulare
+  Execuția corectă a sistemului impune pornirea secvențială a microserviciilor, utilizând **două terminale separate**.
 
-### Pasul 0: Cerințe preliminare
-  - Asigură-te că ai Python instalat și instalează pachetele rulând în terminal:
+### Etapa 0: Pregătirea mediului
+  Este necesară instalarea prealabilă a mediului Python și a dependențelor, prin rularea următoarei comenzi în terminal:
+  ```
   pip install dash pandas plotly paho-mqtt
+  ```
 
-### Pasul 1: Pornește "Creierul" Robotului (Edge FSM)
-  - Deschide primul terminal în folderul proiectului și rulează:
+### Etapa 1: Lansarea Sistemului de Control (Edge FSM)
+  Se deschide un prim terminal în directorul proiectului și se lansează procesul de bază:
+  ```
   python engine.py
-  (Așteaptă ca sistemul să facă auto-diagnosticul INIT și să afișeze că a trecut în starea IDLE. Lasă acest terminal deschis în fundal).
+  ```
+*(Se așteaptă execuția auto-diagnosticului `INIT` până la afișarea tranziției în starea `IDLE`. Acest terminal trebuie păstrat activ în fundal pe durata întregii sesiuni).*
 
-### Pasul 2: Pornește Interfața Web (Digital Twin)
-  - Păstrând primul terminal deschis, deschide un al doilea terminal nou și rulează:
+### Etapa 2: Lansarea Interfeței de Monitorizare (Digital Twin)
+  Se deschide un **al doilea terminal** (distinct de primul) și se execută:
+  ```
   python app.py
+  ```
 
-Pasul 3: Accesarea Sistemului
-  - Deschide un browser și navighează la: http://127.0.0.1:8050
-  - Loghează-te folosind contul: manager (Parolă: dafi2026).
-  - Setează dimensiunea halei (ex: 10x10) și apasă butonul START MISSION. Urmărește cum se populează harta termică 3D în timp real pe măsură ce robotul transmite date!
+### Etapa 3: Operarea Platformei
+  1. Navigarea se realizează prin deschiderea unui browser web la adresa: `http://127.0.0.1:8050`
+  2. Pentru operare completă, autentificarea se efectuează folosind contul: `manager` (Parolă: `dafi2026`) sau `audit` (Parola: `pharma123`).
+  3. Se definesc dimensiunile geometrice ale halei și se inițiază procesul apăsând **START MISSION**. Populația hărții termice 3D se va realiza în timp real, sincronizat cu parcursul robotului.
+
+** Checklist Final P3 **
+  [x] Tabelul Nevoie → Soluție → Modul complet și actualizat.
+  [x] Diagrama State Machine definită conform logicii de navigare, achiziție și limitelor de baterie.
+  [x] Diagrama FSM integrează corect sistemul de întreruperi manuale (Emergency STOP).
+  [x] Legenda State Machine detaliată cu justificarea tehnică specifică industriei farmaceutice.
